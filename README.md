@@ -12,6 +12,12 @@ It's a single-page WebGL app. No build step, no framework, no backend
 required for the core experience — just a static server and an Anthropic API
 key you enter in the browser.
 
+<!-- Hero image — replace the placeholder below with a real screenshot.
+     See "Adding screenshots" at the bottom of this file. -->
+<p align="center">
+  <img src="docs/hero.png" alt="innerFace — a face emerging from matrix rain" width="640">
+</p>
+
 ![matrix rain with a face emerging](https://img.shields.io/badge/render-WebGL-1f6feb)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -192,3 +198,41 @@ label. By contributing you agree to abide by the
 ## License
 
 [MIT](LICENSE) © kurokaita
+
+---
+
+## Adding screenshots & GIFs
+
+The hero image at the top of this README lives at `docs/hero.png`. To add it
+(or any image), you have two options.
+
+### Option A — commit the image to the repo (recommended for the hero)
+
+1. Capture a screenshot. For the full app window on macOS:
+   `Cmd+Shift+4`, then `Space`, then click the window. Save as `docs/hero.png`.
+2. For an animated GIF (better conveys the rain + talking), record a short
+   screen recording then convert it:
+
+   ```bash
+   # record.mov → docs/hero.gif  (15fps, 600px wide, optimized)
+   ffmpeg -i record.mov -vf "fps=15,scale=600:-1:flags=lanczos" \
+     -loop 0 docs/hero.gif
+   ```
+
+3. If you used a GIF, update the `<img src="docs/hero.png">` line above to
+   `docs/hero.gif`.
+4. Commit and push — GitHub renders images from the repo in the README.
+
+### Option B — paste into the GitHub issue/PR UI
+
+Open any issue, drag an image into the comment box, and GitHub returns a URL
+like `https://github.com/user-attachments/assets/...`. Paste that URL into the
+README. The image is hosted by GitHub but not tracked in the repo. Faster, but
+less portable (the link is tied to that upload).
+
+### A note on the test face
+
+If you screenshot a real person's face that you dropped into the app, make
+sure you have the right to publish it. A stock photo, a CC0 portrait, an AI-
+generated face, or your own face are all safe. The face in `docs/hero.png`
+should be something you're comfortable being the public face of the project.
