@@ -5,7 +5,7 @@
 If you believe you've found a security vulnerability in innerFace, **please do
 not open a public issue**. Instead, report it privately:
 
-- Email: **mornslayer@gmail.com**
+- Email: **298914631+kurokaita@users.noreply.github.com**
 - Or open a private security advisory: GitHub repo → Security →
   "Report a vulnerability"
 

@@ -191,4 +191,4 @@ label. By contributing you agree to abide by the
 
 ## License
 
-[MIT](LICENSE) © mornslayer
+[MIT](LICENSE) © kurokaita
