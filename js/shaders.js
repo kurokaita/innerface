@@ -155,6 +155,7 @@ uniform vec3  uPhotoMouth;   // cx, cy, width (field UV)
 uniform float uPhotoChinY;   // jawline bottom (field UV y)
 uniform float uHeadYaw;      // -1..1, + = her left
 uniform float uHeadPitch;    // -1..1, + = nod down
+uniform vec2  uLightDir;     // key-light azimuth/elevation (LIGHT slider)
 
 // pre-lit 3D mesh field (rgb = lit skin, a = coverage). When uMeshOn is set,
 // photo mode reads its skin from here instead of the flat heightmap trick.
@@ -435,10 +436,12 @@ void main() {
         nearEye = clamp(eL + eR, 0.0, 1.0);
       }
 
-      // diffuse light: full head-turn lighting on cheeks/nose, but freeze the
-      // direction near the eyes so the socket shadow stops breathing with yaw
-      vec3 Lturn = normalize(vec3(-0.42 - uHeadYaw * 0.5, 0.55, 0.72));
-      vec3 Lfix  = normalize(vec3(-0.42, 0.55, 0.72));
+      // diffuse light: direction comes from the LIGHT slider (uLightDir), with
+      // a little head-turn coupling on cheeks/nose. Near the eyes the direction
+      // is frozen to the slider value only, so the socket shadow stops
+      // breathing with yaw (the eye-flicker fix).
+      vec3 Lturn = normalize(vec3(uLightDir.x - uHeadYaw * 0.5, uLightDir.y, 0.72));
+      vec3 Lfix  = normalize(vec3(uLightDir.x, uLightDir.y, 0.72));
       vec3 L = mix(Lturn, Lfix, nearEye);
 
       float pdiff = clamp(dot(pn, L), 0.0, 1.0);

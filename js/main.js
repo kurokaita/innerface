@@ -112,7 +112,7 @@ keybox.addEventListener('keydown', (e) => {
   }
 });
 
-// light-direction slider (3D mesh mode only)
+// light-direction slider — relights the photo face (flat and mesh both use it)
 const lightctl = document.getElementById('lightctl');
 const lightaz = document.getElementById('lightaz');
 const lightel = document.getElementById('lightel');
@@ -122,6 +122,11 @@ const readLight = () => {
 };
 lightaz.addEventListener('input', readLight);
 lightel.addEventListener('input', readLight);
+// show the LIGHT control whenever a photo face is active (needs the depth
+// field to compute normals); hidden for the procedural face.
+function syncLightCtl() {
+  lightctl.classList.toggle('show', !!(state.photoOn && state.photoLoaded && state.photoLm));
+}
 
 // help menu (the round "?" button)
 const helpbtn = document.getElementById('helpbtn');
@@ -322,14 +327,13 @@ async function usePhoto(blob) {
       renderer.setFaceMesh(null);
     }
     state.meshOn = false;   // off by default — press G to try the 3D mesh
+    syncLightCtl();
 
     state.faceOn = true;
     state.targetReveal = 1;
-    setStatus(meshBuilt
-      ? '3D face ready — real head turns & jaw · G toggles mesh/flat'
-      : landmarks
-        ? 'photo face ready — mouth/blink animated · P toggles procedural'
-        : 'photo face ready — no landmarks found · P toggles procedural');
+    setStatus(landmarks
+      ? 'photo face ready — drag LIGHT to move the key light · P toggles procedural'
+      : 'photo face ready — no landmarks found · P toggles procedural');
     savePhoto(canvas, landmarks);   // she remembers this face next time
   } catch (e) {
     setStatus('photo failed: ' + e.message);
@@ -355,6 +359,7 @@ loadSavedPhoto().then((saved) => {
     state.photoLoaded = true;
     state.photoOn = true;
     state.photoLm = saved.landmarks;
+    syncLightCtl();
     revealFace(saved.landmarks
       ? 'welcome back — she remembers this face · V to talk'
       : 'welcome back · V to talk');
@@ -450,8 +455,7 @@ window.addEventListener('keydown', (e) => {
     case 'KeyG':
       if (renderer.mesh) {
         state.meshOn = !state.meshOn;
-        lightctl.classList.toggle('show', state.meshOn);
-        setStatus('face: ' + (state.meshOn ? '3D mesh · drag LIGHT to move the key light' : 'flat photo'));
+        setStatus('face: ' + (state.meshOn ? '3D mesh (experimental)' : 'flat photo'));
       } else {
         setStatus('no 3D mesh — drop a clear front-facing photo');
       }
@@ -469,7 +473,8 @@ window.addEventListener('keydown', (e) => {
     case 'KeyP':
       if (state.photoLoaded) {
         state.photoOn = !state.photoOn;
-        setStatus(state.photoOn ? 'face: photo' : 'face: procedural');
+        syncLightCtl();
+        setStatus(state.photoOn ? 'face: photo · drag LIGHT to move the key light' : 'face: procedural');
       } else {
         setStatus('no photo loaded — drop or paste an image');
       }

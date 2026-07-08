@@ -88,7 +88,7 @@ export class Renderer {
       'uMouthOpen', 'uMouthCurve', 'uBrowLift', 'uBrowTilt',
       'uEyeOpen', 'uPupilX', 'uPupilY', 'uCheek', 'uBlink',
       'uPhoto', 'uPhotoOn', 'uPhotoHasLm', 'uPhotoEyeL', 'uPhotoEyeR', 'uPhotoMouth',
-      'uPhotoHasDepth', 'uPhotoChinY', 'uHeadYaw', 'uHeadPitch',
+      'uPhotoHasDepth', 'uPhotoChinY', 'uHeadYaw', 'uHeadPitch', 'uLightDir',
       'uMesh', 'uMeshOn',
     ];
     for (const n of names) this.u[n] = gl.getUniformLocation(this.program, n);
@@ -286,6 +286,8 @@ export class Renderer {
     gl.uniform1f(this.u.uPhotoChinY, p.photoChinY || 0.85);
     gl.uniform1f(this.u.uHeadYaw, p.headYaw || 0);
     gl.uniform1f(this.u.uHeadPitch, p.headPitch || 0);
+    const mld = p.lightDir || [-0.42, 0.55];
+    gl.uniform2f(this.u.uLightDir, mld[0], mld[1]);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texGlyphs);
