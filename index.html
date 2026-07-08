@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>innerFace</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="gl"></canvas>
+
+  <div id="hud">
+    <div id="title">INNERFACE</div>
+    <div id="status">initializing…</div>
+  </div>
+
+  <button id="helpbtn" title="keybinds &amp; help" aria-label="help">?</button>
+
+  <div id="helpmenu">
+    <div class="helptitle">CONTROLS</div>
+    <div class="helprow"><b>V</b><span>talk to her (voice)</span></div>
+    <div class="helprow"><b>⏎</b><span>type instead</span></div>
+    <div class="helprow"><b>A</b><span>brain: chat / coding agent</span></div>
+    <div class="helprow"><b>K</b><span>API keys</span></div>
+    <div class="helprow"><b>SPACE</b><span>face on/off</span></div>
+    <div class="helprow"><b>M</b><span>your mic drives the glow</span></div>
+    <div class="helprow"><b>T</b><span>auto-talk demo</span></div>
+    <div class="helprow"><b>E</b><span>cycle expression</span></div>
+    <div class="helprow"><b>P</b><span>photo / procedural face</span></div>
+    <div class="helprow"><b>F</b><span>fullscreen</span></div>
+    <div class="helpnote">drop or paste an image to use your own face</div>
+  </div>
+
+  <div id="error"></div>
+
+  <div id="saybox">
+    <label for="sayinput">say something (typed)</label>
+    <input id="sayinput" type="text" placeholder="hello…" autocomplete="off" spellcheck="false" />
+    <div class="keyhint">Enter to send · Esc to cancel</div>
+  </div>
+
+  <div id="keybox">
+    <label for="keyinput">Anthropic API key — stored in this browser only</label>
+    <input id="keyinput" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+    <label for="eleveninput">ElevenLabs API key — optional, natural voice + real lip sync</label>
+    <input id="eleveninput" type="password" placeholder="optional" autocomplete="off" spellcheck="false" />
+    <div class="keyhint">Enter to save · Esc to cancel</div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

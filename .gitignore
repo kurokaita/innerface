@@ -1,0 +1,15 @@
+# editor / IDE
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# deps & build
+node_modules/
+dist/
