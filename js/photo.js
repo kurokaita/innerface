@@ -187,6 +187,12 @@ export async function processImage(fileOrBlob) {
   const d = img.data;
   const bg = cornerColor(d);
 
+  // subject isolation: prefer a learned selfie segmentation (keeps hair even
+  // when it matches the background); fall back to corner-color keying if the
+  // model is unavailable. fit dims are needed to align the mask.
+  const fit = { ox, oy, w, h, SIZE };
+  const seg = await segmentSubject(bitmap, fit);
+
   // first pass: luma + mask, and a histogram of subject pixels
   const luma = new Float32Array(SIZE * SIZE);
   const mask = new Float32Array(SIZE * SIZE);
@@ -199,9 +205,15 @@ export async function processImage(fileOrBlob) {
       const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3] / 255;
       const l = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
-      // key out pixels close to the background colour
-      const dist = Math.hypot(r - bg[0], g - bg[1], b - bg[2]) / 255;
-      let m = smoothstep(0.08, 0.25, dist) * a;
+      let m;
+      if (seg) {
+        // learned mask: soft threshold so hair edges stay feathered
+        m = smoothstep(0.30, 0.65, seg[j]) * a;
+      } else {
+        // fallback: key out pixels close to the background colour
+        const dist = Math.hypot(r - bg[0], g - bg[1], b - bg[2]) / 255;
+        m = smoothstep(0.08, 0.25, dist) * a;
+      }
       // soft vignette so stray background never reaches the frame edge
       const vx = (x / SIZE) * 2 - 1, vy = (y / SIZE) * 2 - 1;
       m *= 1 - smoothstep(0.78, 0.99, Math.hypot(vx, vy));
@@ -229,7 +241,6 @@ export async function processImage(fileOrBlob) {
     if (hi - lo < 0.1) { lo = 0; hi = 1; }
   }
 
-  const fit = { ox, oy, w, h, SIZE };
   const det = await detectLandmarks(bitmap, fit);
   const depthAt = det && det.raw ? buildDepthField(det.raw, fit) : null;
 
@@ -268,6 +279,57 @@ export async function processImage(fileOrBlob) {
     connections: det ? det.connections : null,
     fit,
   };
+}
+
+// Best-effort MediaPipe selfie segmentation. Returns a Float32Array(SIZE*SIZE)
+// of person-confidence (0 = background, 1 = subject) in processed-field space,
+// or null on failure (caller falls back to corner-color keying). This is what
+// lets hair survive against a same-toned background — the corner keyer eats it,
+// the segmenter keeps it.
+async function segmentSubject(bitmap, fit) {
+  try {
+    const CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+    const { ImageSegmenter, FilesetResolver } = await import(`${CDN}/vision_bundle.mjs`);
+    const files = await FilesetResolver.forVisionTasks(`${CDN}/wasm`);
+    const seg = await ImageSegmenter.createFromOptions(files, {
+      baseOptions: {
+        modelAssetPath:
+          'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/1/selfie_segmenter.tflite',
+      },
+      runningMode: 'IMAGE',
+      outputConfidenceMasks: true,
+      outputCategoryMask: false,
+    });
+
+    // resolve the confidence mask synchronously via the callback form
+    let personMask = null;
+    seg.segment(bitmap, (result) => {
+      const masks = result.confidenceMasks;
+      if (masks && masks.length) {
+        const m = masks[masks.length - 1];   // selfie model: last = person
+        personMask = { data: m.getAsFloat32Array(), w: m.width, h: m.height };
+      }
+      result.close && result.close();
+    });
+    seg.close();
+    if (!personMask) return null;
+
+    // resample the model mask (original-image resolution) into SIZE-space,
+    // undoing the contain-fit (ox/oy/w/h) so it aligns with the luma/albedo.
+    const out = new Float32Array(SIZE * SIZE);
+    const sx = personMask.w / fit.w, sy = personMask.h / fit.h;
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const u = (x - fit.ox) * sx, v = (y - fit.oy) * sy;
+        if (u < 0 || v < 0 || u >= personMask.w || v >= personMask.h) continue;
+        out[y * SIZE + x] = personMask.data[(v | 0) * personMask.w + (u | 0)];
+      }
+    }
+    return out;
+  } catch (e) {
+    console.warn('selfie segmentation unavailable, using corner key:', e);
+    return null;
+  }
 }
 
 // Best-effort MediaPipe Face Landmarker. Returns feature anchors in the
