@@ -1,0 +1,26 @@
+# innerFace editor config — keeps the vanilla-JS style consistent.
+# No build step, no formatter required; this is the source of truth.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# Markdown: preserve trailing two spaces (hard line breaks) and don't trim them.
+trim_trailing_whitespace = false
+max_line_length = off
+
+[*.{glsl,frag,vert}]
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+[Makefile]
+indent_style = tab
