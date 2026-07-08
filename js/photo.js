@@ -61,6 +61,56 @@ function smoothstep(a, b, x) {
   return t * t * (3 - 2 * t);
 }
 
+// Separable box blur of a single-channel field, `passes` times (a stack of
+// box blurs approximates a Gaussian). Mutates via ping-pong buffers.
+function blurField(src, N, radius, passes) {
+  let a = Float32Array.from(src);
+  let b = new Float32Array(N * N);
+  const win = radius * 2 + 1;
+  for (let p = 0; p < passes; p++) {
+    // horizontal
+    for (let y = 0; y < N; y++) {
+      let sum = 0;
+      for (let x = -radius; x <= radius; x++) sum += a[y * N + Math.min(N - 1, Math.max(0, x))];
+      for (let x = 0; x < N; x++) {
+        b[y * N + x] = sum / win;
+        const xr = Math.min(N - 1, x + radius + 1), xl = Math.max(0, x - radius);
+        sum += a[y * N + xr] - a[y * N + xl];
+      }
+    }
+    // vertical
+    for (let x = 0; x < N; x++) {
+      let sum = 0;
+      for (let y = -radius; y <= radius; y++) sum += b[Math.min(N - 1, Math.max(0, y)) * N + x];
+      for (let y = 0; y < N; y++) {
+        a[y * N + x] = sum / win;
+        const yr = Math.min(N - 1, y + radius + 1), yl = Math.max(0, y - radius);
+        sum += b[yr * N + x] - b[yl * N + x];
+      }
+    }
+  }
+  return a;
+}
+
+// Homomorphic de-lighting: albedo ≈ luma / blur(luma), re-centered. The blur
+// captures the low-frequency lighting gradient; dividing it out flattens the
+// lighting while preserving high-frequency detail. `strength` (0..1) blends
+// between the original luma (0) and full de-lighting (1) so we don't over-flatten.
+function deLight(luma, mask, N, strength = 0.8) {
+  const blur = blurField(luma, N, Math.round(N / 12), 3);
+  const out = new Float32Array(N * N);
+  // mean subject brightness → the level we re-center de-lit pixels around
+  let meanL = 0, n = 0;
+  for (let j = 0; j < N * N; j++) if (mask[j] > 0.5) { meanL += luma[j]; n++; }
+  meanL = n > 0 ? meanL / n : 0.5;
+  for (let j = 0; j < N * N; j++) {
+    const ratio = luma[j] / Math.max(0.04, blur[j]);   // lighting removed
+    const flat = Math.min(1, ratio * meanL);            // re-center to mid-tone
+    out[j] = Math.min(1, Math.max(0, luma[j] * (1 - strength) + flat * strength));
+  }
+  return out;
+}
+
 // average colour of the four corner patches — treated as "background"
 function cornerColor(d) {
   const P = 12;
@@ -183,7 +233,18 @@ export async function processImage(fileOrBlob) {
   const det = await detectLandmarks(bitmap, fit);
   const depthAt = det && det.raw ? buildDepthField(det.raw, fit) : null;
 
-  // output: R = luma, G = depth (0 where unknown), A = subject mask
+  // ---- de-lighting (homomorphic normalization) -----------------------------
+  // A photo is albedo × baked lighting. The mesh path applies its OWN synthetic
+  // light, so multiplying by the photo's baked light too causes double-lighting
+  // (washout on flat-lit photos, wrong shadows on dramatic ones). Recover an
+  // approximate albedo by dividing luma by a heavily-blurred copy of itself:
+  // the blur IS the smooth low-frequency lighting gradient, so dividing it out
+  // neutralizes the lighting while keeping high-frequency detail (pores, lashes,
+  // feature edges). Stored in the B channel; the flat path keeps reading R.
+  const albedo = deLight(luma, mask, SIZE);
+
+  // output: R = luma (flat path), G = depth, B = de-lit albedo (mesh path),
+  //         A = subject mask
   const out = ctx.createImageData(SIZE, SIZE);
   const o = out.data;
   for (let y = 0; y < SIZE; y++) {
@@ -194,7 +255,7 @@ export async function processImage(fileOrBlob) {
       const v = Math.round(Math.pow(l, 0.85) * 255);
       o[i] = v;
       o[i + 1] = depthAt ? Math.round(depthAt(x / SIZE, y / SIZE) * 255) : v;
-      o[i + 2] = v;
+      o[i + 2] = Math.round(albedo[j] * 255);
       o[i + 3] = Math.round(mask[j] * 255);
     }
   }

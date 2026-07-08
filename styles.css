@@ -221,3 +221,41 @@ html, body {
   color: var(--dim);
   letter-spacing: 0.5px;
 }
+
+/* light-direction control (3D mesh mode only) */
+#lightctl {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--dim);
+  z-index: 40;
+}
+
+#lightctl.show { display: flex; }
+
+#lightctl .lightlabel {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--green);
+  margin-bottom: 2px;
+}
+
+#lightctl label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--dim);
+}
+
+#lightctl input[type="range"] {
+  width: 140px;
+  accent-color: var(--green);
+  cursor: pointer;
+}

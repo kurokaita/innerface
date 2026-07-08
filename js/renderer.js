@@ -114,7 +114,7 @@ export class Renderer {
       border: gl.getAttribLocation(prog, 'aMBorder'),
     };
     this.mu = {};
-    for (const n of ['uMouthOpen', 'uHeadYaw', 'uHeadPitch', 'uFaceTilt', 'uPhoto']) {
+    for (const n of ['uMouthOpen', 'uHeadYaw', 'uHeadPitch', 'uFaceTilt', 'uPhoto', 'uLightDir']) {
       this.mu[n] = gl.getUniformLocation(prog, n);
     }
   }
@@ -191,6 +191,8 @@ export class Renderer {
     gl.uniform1f(this.mu.uHeadYaw, p.headYaw || 0);
     gl.uniform1f(this.mu.uHeadPitch, p.headPitch || 0);
     gl.uniform1f(this.mu.uFaceTilt, p.faceTilt || 0);
+    const ld = p.lightDir || [-0.42, 0.5];
+    gl.uniform2f(this.mu.uLightDir, ld[0], ld[1]);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.texPhoto);
     gl.uniform1i(this.mu.uPhoto, 1);

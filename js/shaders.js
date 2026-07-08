@@ -63,8 +63,9 @@ void main() {
 export const MESH_FRAG = `
 precision highp float;
 
-uniform sampler2D uPhoto;   // r = luma, a = subject mask
+uniform sampler2D uPhoto;   // r = luma, g = depth, b = de-lit albedo, a = mask
 uniform float uHeadYaw;
+uniform vec2  uLightDir;    // x = azimuth (-1..1), y = elevation (-1..1)
 
 varying vec2 vMUv;
 varying vec3 vMNormal;
@@ -74,19 +75,18 @@ void main() {
   vec4 ph = texture2D(uPhoto, vMUv);
   vec3 n = normalize(vMNormal);
 
-  // light fixed in world; turning the head changes which side catches it
-  vec3 L = normalize(vec3(-0.42 + uHeadYaw * 0.4, 0.5, 0.75));
+  // light direction from the slider (+ a little head-turn coupling so the key
+  // light still shifts as she looks around). uLightDir defaults to up-left.
+  vec3 L = normalize(vec3(uLightDir.x + uHeadYaw * 0.3, uLightDir.y, 0.75));
   float diff = clamp(dot(n, L), 0.0, 1.0);
   float rim = pow(1.0 - clamp(abs(n.z), 0.0, 1.0), 2.5);
 
-  // ---- albedo rebalance: don't treat baked photo brightness as albedo ----
-  // A photo already carries its own light. Using ph.r directly as albedo and
-  // multiplying fresh 3D lighting on top drowns the normals: a flat-lit photo
-  // is ~uniform bright, so the lighting has nothing to modulate and clips to
-  // white. Instead pull ph.r toward a mid-gray base and let the 3D normals
-  // drive the directional shading; ph.r contributes texture detail + tone,
-  // not the whole brightness. mix(x, y, 0.6) = x*0.4 + y*0.6.
-  float albedo = mix(0.45, ph.r, 0.6);
+  // ---- albedo: use the de-lit B channel (photo.js homomorphic pass) ----
+  // The blue channel is the photo with its baked lighting divided out, so it's
+  // a near-uniform "unlit skin" we can apply our OWN 3D light to without the
+  // double-lighting washout. Fall back toward luma if albedo is unavailable
+  // (older cached photos with B == luma still read reasonably).
+  float albedo = mix(0.5, ph.b, 0.72);
 
   // 3D lighting shapes the surface: ambient + diffuse from the real normals,
   // plus rim on silhouette edges. Kept on the lower side so highlights still

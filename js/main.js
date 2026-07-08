@@ -112,6 +112,17 @@ keybox.addEventListener('keydown', (e) => {
   }
 });
 
+// light-direction slider (3D mesh mode only)
+const lightctl = document.getElementById('lightctl');
+const lightaz = document.getElementById('lightaz');
+const lightel = document.getElementById('lightel');
+state.lightDir = [parseFloat(lightaz.value), parseFloat(lightel.value)];
+const readLight = () => {
+  state.lightDir = [parseFloat(lightaz.value), parseFloat(lightel.value)];
+};
+lightaz.addEventListener('input', readLight);
+lightel.addEventListener('input', readLight);
+
 // help menu (the round "?" button)
 const helpbtn = document.getElementById('helpbtn');
 const helpmenu = document.getElementById('helpmenu');
@@ -439,7 +450,8 @@ window.addEventListener('keydown', (e) => {
     case 'KeyG':
       if (renderer.mesh) {
         state.meshOn = !state.meshOn;
-        setStatus('face: ' + (state.meshOn ? '3D mesh' : 'flat photo'));
+        lightctl.classList.toggle('show', state.meshOn);
+        setStatus('face: ' + (state.meshOn ? '3D mesh · drag LIGHT to move the key light' : 'flat photo'));
       } else {
         setStatus('no 3D mesh — drop a clear front-facing photo');
       }
@@ -556,6 +568,7 @@ function frame(now) {
     photoChinY: state.photoLm && state.photoLm.chinY ? state.photoLm.chinY : 0.85,
     ...face.params,
     meshOn: state.photoOn && state.meshOn ? 1 : 0,
+    lightDir: state.lightDir,
   });
 
   requestAnimationFrame(frame);
