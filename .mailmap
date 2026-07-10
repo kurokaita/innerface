@@ -1,0 +1,8 @@
+# Canonical author identity for innerFace.
+# Maps any stray/co-author addresses onto the single canonical identity so
+# git shortlog, `git log --author`, and GitHub's contributor stats attribute
+# all work to one person. See: git help shortlog (MAPPING AUTHORS).
+kurokaita <298914631+kurokaita@users.noreply.github.com>
+
+# Suppress the AI co-author address that appeared in early commit trailers.
+kurokaita <298914631+kurokaita@users.noreply.github.com> <noreply@anthropic.com>
